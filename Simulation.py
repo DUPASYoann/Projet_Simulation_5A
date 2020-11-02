@@ -26,3 +26,9 @@ if __name__ == "__main__":
    duree_controle.sort()
    print(inter_arrivee)
    print(duree_controle)
+   
+  for i in range(0,7):
+      print(inter_arrivee[i*10])
+   print()
+   for i in range(0,7):
+      print(duree_controle[i*10])
