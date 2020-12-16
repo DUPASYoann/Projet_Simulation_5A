@@ -1,6 +1,7 @@
 import numpy.random as npr
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 
 
 class Simulateur:
@@ -10,6 +11,8 @@ class Simulateur:
         self.echeancier = list()
         self.date_simulateur = 0.0
         self.date_fin = fin
+        self.miemebus = fin
+        self.arret = True
 
         # matplotlib
         self.x_time = list()
@@ -56,7 +59,7 @@ class Simulateur:
         self.taille_moyenne_file_r = 0
 
         # paramètre
-        self.param_reparation = 1
+        self.param_reparation = 0.3
 
         # # paramètre en minute
         self.param_arrivee_bus = 120
@@ -70,12 +73,18 @@ class Simulateur:
         self.simulateur()
 
     def simulateur(self):
-        while self.echeancier and self.date_simulateur < self.date_fin:
+        while self.echeancier and self.arret:
             # Récupération du dernier évènement ajouté
             couple = self.echeancier.pop(0)
             couple_evenement = couple[0]
             couple_date = couple[1]
             couple_bus = couple[2]
+
+            # QUESTION 5
+            if couple_bus != 0:
+                if couple_bus["ID"] == self.miemebus - 1 and couple_bus["arrivee_controle"] > 0:
+                    self.arret = False
+            # QUESTION 5
 
             # Mise à jour des variables
             self.mise_a_jour_aires(self.date_simulateur, couple_date)
@@ -250,9 +259,86 @@ def fin_simulation(simulateur):
 
 if __name__ == '__main__':
 
-    simu = Simulateur(debut_simulation, 40*60)
-    print([list(x.values()) for x in simu.liste_bus])
-    print(simu.nb_bus)
+    # Question 5
+    moyenne_av_controle = list()
+    moyenne_glissante = list()
+    values_av_c = list()
+    parametre_w = 20
+    parametre_m = 250
+    replication = 100
+
+    for m in range(2, parametre_m):
+        for r in range(replication):
+            simu = Simulateur(debut_simulation, m)
+            bus = simu.liste_bus[m-1]
+            values_av_c.append(bus["arrivee_controle"]-bus["arrivee_file_c"])
+        moyenne_av_controle.append(sum(values_av_c)/replication)
+        values_av_c.clear()
+    print(moyenne_av_controle)
+    plt.plot(moyenne_av_controle)
+    plt.show()
+
+    somme = list()
+
+    for i in range(1, parametre_m - parametre_w):
+        somme = 0
+        if i < parametre_w:
+            for k in range(-(i-1), i-1):
+                somme += moyenne_av_controle[k+i - 1]
+            somme /= 2*i - 1
+            moyenne_glissante.append(somme)
+        else:
+            for k in range(-parametre_w, parametre_w):
+                somme += moyenne_av_controle[k+i - 1]
+            somme /= 2*parametre_w + 1
+            moyenne_glissante.append(somme)
+
+    plt.plot(moyenne_glissante)
+    plt.show()
+
+    # Question 3
+
+    # simu = Simulateur(debut_simulation, 240*60)
+    # print([list(x.values()) for x in simu.liste_bus])
+    # print(simu.nb_bus)
+    #
+    # temps_dattente_file_c = [x["arrivee_controle"]-x["arrivee_file_c"] for x in simu.liste_bus]
+    # temps_dattente_file_r = [x["arrivee_reparation"]-x["arrivee_file_r"] for x in simu.liste_bus]
+    #
+    # temps_dattente_file_c_exclus = list()
+    # temps_dattente_file_r_exclus = list()
+    # nb_bus_reparation = sum([x["besoin_reparation"] for x in simu.liste_bus])
+    # nb_bus_exclus = 0
+    # nb_bus_exclus_r = 0
+    #
+    # for x in simu.liste_bus:
+    #     if x["dans_le_systeme"]:
+    #         if x["arrivee_controle"] == 0.0:
+    #             nb_bus_exclus += 1
+    #         else:
+    #             temps_dattente_file_c_exclus.append(x["arrivee_controle"]-x["arrivee_file_c"])
+    #     else:
+    #         temps_dattente_file_c_exclus.append(x["arrivee_controle"] - x["arrivee_file_c"])
+    #
+    # for x in simu.liste_bus:
+    #     if x["dans_le_systeme"] and x["besoin_reparation"]:
+    #         if x["arrivee_reparation"] == 0.0:
+    #             nb_bus_exclus_r += 1
+    #         else:
+    #             temps_dattente_file_r_exclus.append(x["arrivee_reparation"]-x["arrivee_file_r"])
+    #     else:
+    #         temps_dattente_file_r_exclus.append(x["arrivee_reparation"] - x["arrivee_file_r"])
+    #
+    # print(sum(temps_dattente_file_c)/simu.nb_bus)
+    # print(sum(temps_dattente_file_r)/simu.nb_bus_r)
+    # print(sum(temps_dattente_file_c_exclus)/(simu.nb_bus - nb_bus_exclus))
+    # print(sum(temps_dattente_file_r_exclus)/(simu.nb_bus_r - nb_bus_exclus_r))
+    # print(simu.attente_moyen_av_controle)
+    # print(simu.attente_moyen_ap_controle)
+    # print(max(temps_dattente_file_c))
+    # print(max(temps_dattente_file_r))
+
+    # Question 2
 
     # moyenne_tps_att_moy_avt_ctrl = 0
     # moyenne_tps_att_moy_avt_rep = 0
